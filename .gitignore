@@ -89,7 +89,7 @@ build/
 
 doc/*.txt
 
-
+.intellijPlatform
 
 # doc 디렉토리 아래 모든 .pdf 파일 무시
 

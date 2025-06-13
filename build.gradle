@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "com.maker"
-version = "1.1"
+version = "1.2"
 
 repositories {
     mavenCentral()
@@ -17,8 +17,8 @@ repositories {
 // Read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin.html
 dependencies {
     intellijPlatform {
-//        create("IU", "2025.1")
-        create("IU", "2024.1")
+        create("IU", "2025.1")
+//        create("IU", "2024.1")
         // Add necessary plugin dependencies for compilation here, example:
         // bundledPlugin("com.intellij.java")
         bundledPlugin("com.intellij.java")

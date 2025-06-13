@@ -10,6 +10,7 @@
     <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
     <vendor url="https://github.com/kth9916/dto_maker">thKim</vendor>
 
+
     <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
          Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
     <description>
@@ -34,6 +35,8 @@
 
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
+    <idea-version since-build="241" until-build="252.*"/>
+
     <extensions defaultExtensionNs="com.intellij">
         <!-- PersistentStateComponent 서비스 등록 -->
         <projectService serviceImplementation="com.maker.state.MappingPluginState"/>
