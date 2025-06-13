@@ -74,12 +74,12 @@ public class MappingToolWindowContentPanel extends JPanel {
 
 		// **생성된 코드 표시 영역 초기화**
 		generatedCodeLabel = new JBLabel("Generated Code:");
-		generatedCodeArea = new JTextArea(30, 40); // 10줄, 40열 텍스트 영역 (크기 조정 필요)
+		generatedCodeArea = new JTextArea(50, 40); // 10줄, 40열 텍스트 영역 (크기 조정 필요)
 		generatedCodeArea.setEditable(false); // 편집 불가능
 		generatedCodeArea.setLineWrap(true); // 자동 줄바꿈
 		generatedCodeArea.setWrapStyleWord(true); // 단어 단위 줄바꿈
 		JScrollPane codeScrollPane = new JScrollPane(generatedCodeArea); // 스크롤 가능하도록 JScrollPane 추가
-		codeScrollPane.setPreferredSize(new Dimension(400, 600));
+		codeScrollPane.setPreferredSize(new Dimension(400, 800));
 		copyButton = new JButton("Copy Code");
 
 		generateListMethodCheckBox = new JCheckBox("Generate List Conversion Method");
@@ -104,8 +104,6 @@ public class MappingToolWindowContentPanel extends JPanel {
 			generateMethodCommentCheckBox.setSelected(true);
 		}
 
-		JPanel copyButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-		copyButtonPanel.add(copyButton);
 		// UI 레이아웃 구성 (FormBuilder 사용 예시)
 		// **UI 레이아웃 구성 (BorderLayout 활용)**
 		// 상단 영역을 담을 패널 생성 (FormBuilder 사용)
@@ -118,7 +116,6 @@ public class MappingToolWindowContentPanel extends JPanel {
 			.addComponent(generateMethodCommentCheckBox)
 			.addComponent(generatedCodeLabel)
 			.addComponent(codeScrollPane)
-			.addComponent(copyButtonPanel)
 			.addComponentFillVertically(new JPanel(), 0);// 남은 공간 채우는 컴포넌트 추가 (선택 사항)
 
 		// 메인 패널의 레이아웃을 BorderLayout으로 설정
@@ -228,6 +225,7 @@ public class MappingToolWindowContentPanel extends JPanel {
 		buttonPanel.add(removeFieldButton);
 		buttonPanel.add(generateBuilderButton);
 		buttonPanel.add(generateGetterSetterButton);
+		buttonPanel.add(copyButton);
 		return buttonPanel;
 	}
 
