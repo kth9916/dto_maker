@@ -1,0 +1,117 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
+    <id>com.maker.dto-maker</id>
+
+    <!-- Public plugin name should be written in Title Case.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
+    <name>Dto-maker</name>
+
+    <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
+    <vendor url="https://github.com/kth9916">thKim</vendor>
+
+    <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
+    <description>
+        <![CDATA[
+  Enhance your development efficiency with the DTO Maker plugin, designed to simplify the creation of Data Transfer Objects.
+
+  <ul>
+    <li>Eliminate tedious manual mapping by automatically generating conversion code.</li>
+    <li>Swiftly generate DTOs following the robust Builder pattern for improved readability and maintainability.</li>
+    <li>Instantly create standard DTOs equipped with conventional Getter and Setter methods.</li>
+  </ul>
+    ]]>
+    </description>
+
+    <!-- Product and plugin compatibility requirements.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
+    <depends>com.intellij.modules.platform</depends>
+
+    <!-- Java 언어 플러그인 모듈에 대한 종속성 선언 -->
+    <!-- PsiClass 등 Java PSI를 사용하기 위해 필요 -->
+    <depends>com.intellij.modules.java</depends>
+
+    <!-- Extension points defined by the plugin.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- PersistentStateComponent 서비스 등록 -->
+        <projectService serviceImplementation="com.maker.state.MappingPluginState"/>
+
+        <!-- 알림 그룹 등록 -->
+        <notificationGroup id="Mapping Plugin Notifications" displayType="NONE"/>
+        <!-- id: 코드에서 사용할 고유 ID -->
+        <!-- displayId: 사용자에게 표시될 이름 (보통 id와 동일하게 설정) -->
+        <!-- is-->
+        <!-- Tool Window 등록 -->
+        <toolWindow
+                id="MappingToolWindow"
+                factoryClass="com.maker.ui.MappingToolWindowFactory"
+                anchor="right"
+                icon="AllIcons.Toolwindows.ToolWindowRun"
+        />
+    </extensions>
+
+    <!-- 액션 등록 섹션 -->
+    <actions>
+        <!-- **새로운 컨텍스트 메뉴 그룹 정의** -->
+        <group id="MappingPluginContextMenuGroup"
+               text="DTO Maker"
+               popup="true"
+        >
+            <!-- 이 그룹 자체를 원하는 상위 컨텍스트 메뉴 그룹에 추가 -->
+            <add-to-group group-id="EditorPopupMenu" anchor="first"/>
+
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="first"/>
+
+
+            <!-- 이 그룹에 속할 액션들은 위에서 <add-to-group group-id="MappingPluginContextMenuGroup"/> 로 지정했습니다. -->
+            <!-- 또는 <reference id="..."/> 태그를 사용하여 명시적으로 포함시킬 수도 있습니다. -->
+            <reference ref="com.maker.action.LoadSourceClassAction"/>
+            <reference ref="com.maker.action.LockOnTargetClassAction"/>
+        </group>
+        <!-- LoadSourceClassAction 액션 등록 -->
+        <action id="com.maker.action.LoadSourceClassAction"
+                class="com.maker.action.LoadSourceClassAction"
+                text="Loading Bullets"
+                description="Loads the selected Java class as the source for mapping."
+        >
+            <!-- 액션이 나타날 위치 지정 -->
+            <add-to-group group-id="MappingPluginContextMenuGroup"/>
+            <!-- 다른 그룹에 추가할 수도 있습니다. -->
+        </action>
+
+        <!-- LockOnTargetClassAction 액션 등록 -->
+        <action id="com.maker.action.LockOnTargetClassAction"
+                class="com.maker.action.LockOnTargetClassAction"
+                text="Lock On"
+                description="Locks on the selected Java class as the target and allows field selection."
+        >
+            <!-- 이 액션을 아래 정의할 새로운 그룹에 추가 -->
+            <add-to-group group-id="MappingPluginContextMenuGroup"/>
+            <!-- 그룹 내에서 Load 액션 뒤에 오도록 순서 지정 (선택 사항) -->
+            <add-to-group group-id="MappingPluginContextMenuGroup" anchor="after"
+                          relative-to-action="com.maker.action.LoadSourceClassAction"/>
+        </action>
+
+        <!-- GenerateMappingCodeAction (Shot) 액션 등록 -->
+        <action id="com.maker.action.GenerateMappingCodeAction"
+                class="com.maker.action.GenerateMappingCodeAction"
+                text="Generate Builder Code"
+                description="Generates Builder pattern mapping code."
+                icon="AllIcons.Actions.Execute"
+        >
+        </action>
+
+        <action id="com.maker.action.GenerateGetterSetterMappingCodeAction"
+                class="com.maker.action.GenerateGetterSetterMappingCodeAction"
+                text="Generate Getter/Setter Code"
+                description="Generates Getter/Setter mapping code."
+                icon="AllIcons.Actions.RunAll"
+        >
+            <!-- <add-to-group> 태그는 제거하거나 다른 그룹에 추가 -->
+        </action>
+
+    </actions>
+
+</idea-plugin>
