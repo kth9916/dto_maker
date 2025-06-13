@@ -161,7 +161,9 @@ public class GenerateGetterSetterMappingCodeAction extends AnAction {
 
 		// 2. 메소드 시그니처 (예: public TargetClass from(SourceClass source))
 		String sourceClassName = sourceClass.getName();
+		String sourceUncapitalizedName = StringUtils.uncapitalize(sourceClassName);
 		String targetClassName = targetClass.getName();
+		String targetUncapitalizedName = StringUtils.uncapitalize(targetClassName);
 		if (generateMethodComment) {
 			codeBuilder.append("    /**\n");
 			codeBuilder.append("     * ")
@@ -179,19 +181,22 @@ public class GenerateGetterSetterMappingCodeAction extends AnAction {
 			.append(targetClassName)
 			.append(" from(")
 			.append(sourceClassName)
-			.append(" source) {\n");
+			.append(" ")
+			.append(sourceUncapitalizedName).append(") {\n");
 
 		// 3. 소스 객체 null 체크
 		codeBuilder.append("        // Handle null source object\n");
-		codeBuilder.append("        if (source == null) {\n");
+		codeBuilder.append("        if (").append(sourceUncapitalizedName).append(" == null) {\n");
 		codeBuilder.append("            return null;\n");
 		codeBuilder.append("        }\n\n");
 
 		// 4. 대상 객체 생성
 		// BeanUtils.instantiateClass(targetType)와 유사하게 기본 생성자로 객체 생성
-		codeBuilder.append("        ")
+		codeBuilder.append("    ")
 			.append(targetClassName)
-			.append(" target = new ")
+			.append(" ")
+			.append(targetUncapitalizedName)
+			.append(" = new ")
 			.append(targetClassName)
 			.append("();\n\n");
 
@@ -204,9 +209,22 @@ public class GenerateGetterSetterMappingCodeAction extends AnAction {
 			PsiField targetField = targetClass.findFieldByName(targetFieldName, false);
 			if (targetField == null) {
 				// 필드를 찾을 수 없는 경우 - 주석 처리
-				codeBuilder.append("        // TODO: Field '")
+				codeBuilder
+					.append("        ")
+					.append("// ")
+					.append(targetUncapitalizedName)
+					.append(".")
+					.append("set")
+					.append(StringUtils.capitalize(targetFieldName))
+					.append("(")
+					.append(sourceUncapitalizedName)
+					.append(".")
+					.append("get(...))")
+					.append("    // TODO: Field '")
 					.append(targetFieldName)
-					.append("' not found in Source class\n");
+					.append("' not found in ")
+					.append(sourceClassName)
+					.append(" class\n");
 				continue;
 			}
 
@@ -227,22 +245,21 @@ public class GenerateGetterSetterMappingCodeAction extends AnAction {
 						+ " => Type conversion needed";
 				}
 
-				StringBuilder getMethod = new StringBuilder();
-
 				// 소스 필드 접근자 호출 코드 생성 (Record vs Class)
 				if (isSourceRecord) {
-					accessorCall = "source." + targetFieldName + "()";
+					accessorCall = sourceUncapitalizedName + "." + targetFieldName + "()";
 				} else {
 					// Class: Getter 메소드
 					String presumedGetterName = "get" + StringUtils.capitalize(targetFieldName);
-					accessorCall = "source." + presumedGetterName + "()";
+					accessorCall = sourceUncapitalizedName + "." + presumedGetterName + "()";
 				}
 
 				// 대상 클래스의 Setter 메소드 찾기
 				// PropertyUtilBase.findPropertySetter 사용
 
 				codeBuilder.append("        ")
-					.append("target.")
+					.append(targetUncapitalizedName)
+					.append(".")
 					.append("set")
 					.append(StringUtils.capitalize(targetFieldName))
 					.append("(")
@@ -261,7 +278,7 @@ public class GenerateGetterSetterMappingCodeAction extends AnAction {
 		}
 
 		// 6. 대상 객체 반환
-		codeBuilder.append("\n        return target;\n");
+		codeBuilder.append("\n        return ").append(targetUncapitalizedName).append(";\n");
 
 		// 7. 메소드 종료
 		codeBuilder.append("    }\n");

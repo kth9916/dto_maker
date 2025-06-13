@@ -161,7 +161,10 @@ public class GenerateMappingCodeAction extends AnAction {
 
 		// 3. from 메소드 시그니처
 		String sourceClassName = sourceClass.getName();
+		String sourceUncapitalizedName = StringUtils.uncapitalize(sourceClassName);
 		String targetClassName = targetClass.getName();
+		String targetUncapitalizedName = StringUtils.uncapitalize(targetClassName);
+
 		if (generateMethodComment) {
 			codeBuilder.append("    /**\n");
 			codeBuilder.append("     * ")
@@ -179,11 +182,12 @@ public class GenerateMappingCodeAction extends AnAction {
 			.append(targetClassName)
 			.append(" from(")
 			.append(sourceClassName)
-			.append(" source) {\n");
+			.append(" ")
+			.append(sourceUncapitalizedName).append(") {\n");
 
 		// 4. 소스 객체 null 체크
 		codeBuilder.append("        // Handle null source object\n");
-		codeBuilder.append("        if (source == null) {\n");
+		codeBuilder.append("        if (").append(sourceUncapitalizedName).append(" == null) {\n");
 		codeBuilder.append("            return null;\n");
 		codeBuilder.append("        }\n\n");
 
@@ -200,7 +204,13 @@ public class GenerateMappingCodeAction extends AnAction {
 			PsiField targetField = targetClass.findFieldByName(targetFieldName, false);
 			if (targetField == null) {
 				// 필드를 찾을 수 없는 경우 (이름 변경 등) - 주석 처리
-				codeBuilder.append("                // .").append(targetFieldName).append("(...) // TODO: Field '").append(targetFieldName).append("' not found in Source class\n");
+				codeBuilder.append("                // .")
+					.append(targetFieldName)
+					.append("(...) // TODO: Field '")
+					.append(targetFieldName)
+					.append("' not found in ")
+					.append(sourceClassName)
+					.append(" class\n");
 				continue;
 			}
 
@@ -220,7 +230,9 @@ public class GenerateMappingCodeAction extends AnAction {
 				if (isSourceRecord) {
 					codeBuilder.append("                .")
 						.append(targetFieldName)
-						.append("(source.")
+						.append("(")
+						.append(sourceUncapitalizedName)
+						.append(".")
 						.append(targetFieldName)
 						.append("())");
 					if (typeMismatchComment != null) {
@@ -231,7 +243,9 @@ public class GenerateMappingCodeAction extends AnAction {
 					String getterName = "get" + StringUtils.capitalize(targetFieldName); // Spring StringUtils 필요
 					codeBuilder.append("                .")
 						.append(targetFieldName)
-						.append("(source.")
+						.append("(")
+						.append(sourceUncapitalizedName)
+						.append(".")
 						.append(getterName)
 						.append("())");
 					if (typeMismatchComment != null) {

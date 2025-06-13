@@ -11,6 +11,8 @@ import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.intellij.notification.NotificationGroupManager;
 import com.intellij.notification.NotificationType;
 import com.intellij.openapi.project.Project;
@@ -392,7 +394,11 @@ public class MappingToolWindowContentPanel extends JPanel {
 		StringBuilder codeBuilder = new StringBuilder();
 
 		String sourceClassName = sourceClass.getName();
+		String sourceUncapitalizedName = StringUtils.uncapitalize(sourceClassName);
 		String targetClassName = targetClass.getName();
+		String targetUncapitalizedName = StringUtils.uncapitalize(targetClassName);
+
+		String sourceListName = sourceUncapitalizedName + "List";
 
 		// 메소드 시그니처 주석
 		if (generateMethodComment) {
@@ -412,22 +418,34 @@ public class MappingToolWindowContentPanel extends JPanel {
 			.append(targetClassName)
 			.append("> fromList(List<")
 			.append(sourceClassName)
-			.append("> sourceList) {\n"); // <-- List import 필요
+			.append("> ")
+			.append(sourceListName)
+			.append(") {\n");
 
 		// null 체크
 		codeBuilder.append("        // Handle null source list\n");
-		codeBuilder.append("        if (sourceList == null) {\n");
+		codeBuilder
+			.append("        if (")
+			.append(sourceListName)
+			.append(" == null) {\n")
+			;
 		codeBuilder.append("            return null;\n");
 		codeBuilder.append("        }\n\n");
 
 		// 빈 리스트 처리 (선택 사항)
 		codeBuilder.append("        // Handle empty source list\n");
-		codeBuilder.append("        if (sourceList.isEmpty()) {\n");
+		codeBuilder
+			.append("        if (")
+			.append(sourceListName)
+			.append(".isEmpty()) {\n");
 		codeBuilder.append("            return java.util.Collections.emptyList(); \n");
 		codeBuilder.append("        }\n\n");
 
 		// 스트림을 사용하여 변환
-		codeBuilder.append("        return sourceList.stream()\n");
+		codeBuilder
+			.append("        return ")
+			.append(sourceListName)
+			.append(".stream()\n");
 		codeBuilder.append(
 			"                .map(this::from) // Use the single object conversion method\n"); // <-- 단일 객체 변환 메소드 호출
 		codeBuilder.append("                .collect(java.util.stream.Collectors.toList()); \n");
