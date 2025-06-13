@@ -115,7 +115,7 @@ public class LoadSourceClassAction extends AnAction {
 
 			// 3. 플러그인 UI 업데이트 (Tool Window)
 			ToolWindow toolWindow = ToolWindowManager.getInstance(project)
-				.getToolWindow("MappingToolWindow"); // plugin.xml에 등록한 ID 사용
+				.getToolWindow("DTO Maker"); // plugin.xml에 등록한 ID 사용
 			if (toolWindow != null) {
 				// Tool Window가 열려있지 않으면 열기 (선택 사항)
 				// toolWindow.activate(null);

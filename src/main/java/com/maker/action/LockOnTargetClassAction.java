@@ -132,7 +132,7 @@ public class LockOnTargetClassAction extends AnAction {
 			.notify(project);
 
 		// 6. 플러그인 UI 업데이트 (Tool Window)
-		ToolWindow toolWindow = ToolWindowManager.getInstance(project).getToolWindow("MappingToolWindow");
+		ToolWindow toolWindow = ToolWindowManager.getInstance(project).getToolWindow("DTO Maker");
 		if (toolWindow != null) {
 			// toolWindow.activate(null); // 필요시 주석 해제
 

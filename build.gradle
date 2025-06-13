@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "com.maker"
-version = "1.0-SNAPSHOT"
+version = "1.1"
 
 repositories {
     mavenCentral()
@@ -17,7 +17,8 @@ repositories {
 // Read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin.html
 dependencies {
     intellijPlatform {
-        create("IU", "2025.1")
+//        create("IU", "2025.1")
+        create("IU", "2024.1")
         // Add necessary plugin dependencies for compilation here, example:
         // bundledPlugin("com.intellij.java")
         bundledPlugin("com.intellij.java")
@@ -27,7 +28,7 @@ dependencies {
 intellijPlatform {
     pluginConfiguration {
         ideaVersion {
-            sinceBuild = "222"
+            sinceBuild = "241"
         }
 
         changeNotes = """
@@ -37,6 +38,6 @@ intellijPlatform {
 }
 
 tasks.withType(JavaCompile) { // <-- tasks 블록 밖으로 이동
-    sourceCompatibility = "21"
-    targetCompatibility = "21"
+    sourceCompatibility = "17"
+    targetCompatibility = "17"
 }

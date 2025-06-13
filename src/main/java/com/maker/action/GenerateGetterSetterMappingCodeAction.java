@@ -121,7 +121,7 @@ public class GenerateGetterSetterMappingCodeAction extends AnAction {
 
 		// 5. 생성된 코드를 UI에 표시 (Tool Window)
 		// Tool Window UI 컴포넌트를 찾아 setGeneratedCode 메소드 호출
-		ToolWindow toolWindow = ToolWindowManager.getInstance(project).getToolWindow("MappingToolWindow");
+		ToolWindow toolWindow = ToolWindowManager.getInstance(project).getToolWindow("DTO Maker");
 		if (toolWindow != null) {
 			Content content = toolWindow.getContentManager().getContent(0);
 			if (content != null) {
