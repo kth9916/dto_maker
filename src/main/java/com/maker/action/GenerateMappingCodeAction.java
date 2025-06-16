@@ -22,6 +22,7 @@ import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiType;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.testFramework.LightVirtualFile;
+import com.maker.entity.MethodResult;
 import com.maker.state.MappingPluginState;
 
 /**
@@ -127,20 +128,20 @@ public class GenerateMappingCodeAction extends AnAction {
 		}
 
 		// 4. Java 코드 문자열 생성
-		String generatedCode = generateMappingMethodCode(sourceClass, targetClass, includedTargetFieldNames, project,
-			state.isGenerateMethodComment()); // 이 메소드는 private 유지
+		MethodResult methodResult = generateMappingMethodCode(sourceClass, targetClass, includedTargetFieldNames, project,
+			state.isGenerateMethodComment(), state.isGererateAllField()); // 이 메소드는 private 유지
 
 		// 5. 생성된 코드 표시 (새 에디터 탭)
-		showGeneratedCodeInNewTab(project, generatedCode,
+		showGeneratedCodeInNewTab(project, methodResult.generatedCode(),
 			sourceClass.getName() + "To" + targetClass.getName() + "Mapping.java"); // 이 메소드는 private 유지
 
 		NotificationGroupManager.getInstance().getNotificationGroup("Mapping Plugin Notifications")
-			.createNotification("Mapping code generated", "Code is shown in a new tab.", NotificationType.INFORMATION)
+			.createNotification("Mapping generatedCode generated", "Code is shown in a new tab.", NotificationType.INFORMATION)
 			.notify(project);
 	}
 
-	public static String generateMappingMethodCode(PsiClass sourceClass, PsiClass targetClass,
-		List<String> includedTargetFieldNames, Project project, Boolean generateMethodComment) {
+	public static MethodResult generateMappingMethodCode(PsiClass sourceClass, PsiClass targetClass,
+		List<String> includedTargetFieldNames, Project project, Boolean generateMethodComment, Boolean gererateAllField) {
 		StringBuilder codeBuilder = new StringBuilder();
 
 		// 1. Import 문 추가 (간단 예시, 실제로는 더 정교하게 처리 필요)
@@ -164,6 +165,7 @@ public class GenerateMappingCodeAction extends AnAction {
 		String sourceUncapitalizedName = StringUtils.uncapitalize(sourceClassName);
 		String targetClassName = targetClass.getName();
 		String targetUncapitalizedName = StringUtils.uncapitalize(targetClassName);
+		String methodName = "gen" + targetClassName + "From"  + sourceClassName;
 
 		if (generateMethodComment) {
 			codeBuilder.append("    /**\n");
@@ -180,7 +182,9 @@ public class GenerateMappingCodeAction extends AnAction {
 		}
 		codeBuilder.append("    public ")
 			.append(targetClassName)
-			.append(" from(")
+			.append(" ")
+			.append(methodName)
+			.append("(")
 			.append(sourceClassName)
 			.append(" ")
 			.append(sourceUncapitalizedName).append(") {\n");
@@ -204,13 +208,35 @@ public class GenerateMappingCodeAction extends AnAction {
 			PsiField targetField = targetClass.findFieldByName(targetFieldName, false);
 			if (targetField == null) {
 				// 필드를 찾을 수 없는 경우 (이름 변경 등) - 주석 처리
-				codeBuilder.append("                // .")
-					.append(targetFieldName)
-					.append("(...) // TODO: Field '")
-					.append(targetFieldName)
-					.append("' not found in ")
-					.append(sourceClassName)
-					.append(" class\n");
+				if (gererateAllField) {
+					codeBuilder
+						.append("                // .")
+						.append(targetFieldName)
+						.append("(...)")
+					;
+					PsiField targetFieldInHierarchy = targetClass.findFieldByName(targetFieldName, true);
+					if (targetFieldInHierarchy != null) {
+						// 상속받은 필드인 경우
+						codeBuilder
+							.append(" // TODO: Field '")
+							.append(targetFieldName)
+							.append("' not found in ")
+							.append(targetClassName)
+							.append(" class, but found in superclass (")
+							.append(targetFieldInHierarchy.getContainingClass().getName())
+							.append("). Mapping might be needed.\n");
+						// 필요하다면 해당 필드에 대한 Setter 호출 코드를 주석 처리하여 추가
+						// codeBuilder.append("        // target.").append("set").append(StringUtils.capitalize(targetFieldName)).append("(...); // Consider mapping this inherited field\n");
+					} else {
+						// 상속 포함하여도 필드를 찾을 수 없는 경우
+						codeBuilder
+							.append(" // TODO: Field '")
+							.append(targetFieldName)
+							.append("' not found in ")
+							.append(targetClassName)
+							.append(" class\n");
+					}
+				}
 				continue;
 			}
 
@@ -255,7 +281,16 @@ public class GenerateMappingCodeAction extends AnAction {
 				}
 			} else {
 				// 소스에 동일 이름 필드가 없는 경우
-				// codeBuilder.append("                // .").append(targetFieldName).append("(...) // TODO: Map field '").append(targetFieldName).append("' (no matching field in source)\n");
+				if (gererateAllField) {
+					codeBuilder
+						.append("                // .")
+						.append(targetFieldName)
+						.append("(...) // TODO: Field '")
+						.append(targetFieldName)
+						.append("' not found in ")
+						.append(sourceClassName)
+						.append(" class\n");
+				}
 			}
 		}
 
@@ -290,7 +325,7 @@ public class GenerateMappingCodeAction extends AnAction {
 		// PsiElement formattedMethod = codeStyleManager.reformat(generatedPsiMethod);
 		// return formattedMethod.getText();
 
-		return codeBuilder.toString(); // 형식 조정 없이 문자열 반환
+		return new MethodResult(methodName, codeBuilder.toString()); // 형식 조정 없이 문자열 반환
 	}
 
 	/**

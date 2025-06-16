@@ -23,6 +23,7 @@ import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiType;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.ui.content.Content;
+import com.maker.entity.MethodResult;
 import com.maker.state.MappingPluginState;
 import com.maker.ui.MappingToolWindowContentPanel;
 
@@ -116,8 +117,8 @@ public class GenerateGetterSetterMappingCodeAction extends AnAction {
 		}
 
 		// **4. Getter/Setter Java 코드 문자열 생성**
-		String generatedCode = generateGetterSetterMappingMethodCode(sourceClass, targetClass, includedTargetFieldNames,
-			project, state.isGenerateMethodComment()); // <-- 새로운 코드 생성 메소드 호출
+		MethodResult methodResult = generateGetterSetterMappingMethodCode(sourceClass, targetClass, includedTargetFieldNames,
+			project, state.isGenerateMethodComment(), state.isGererateAllField()); // <-- 새로운 코드 생성 메소드 호출
 
 		// 5. 생성된 코드를 UI에 표시 (Tool Window)
 		// Tool Window UI 컴포넌트를 찾아 setGeneratedCode 메소드 호출
@@ -128,13 +129,13 @@ public class GenerateGetterSetterMappingCodeAction extends AnAction {
 				JComponent component = content.getComponent();
 				if (component instanceof MappingToolWindowContentPanel) {
 					MappingToolWindowContentPanel uiPanel = (MappingToolWindowContentPanel)component;
-					uiPanel.setGeneratedCode(generatedCode); // <-- UI 업데이트
+					uiPanel.setGeneratedCode(methodResult.generatedCode()); // <-- UI 업데이트
 				}
 			}
 		}
 
 		NotificationGroupManager.getInstance().getNotificationGroup("Mapping Plugin Notifications")
-			.createNotification("Getter/Setter code generated", "Code is shown in the tool window.",
+			.createNotification("Getter/Setter generatedCode generated", "Code is shown in the tool window.",
 				NotificationType.INFORMATION)
 			.notify(project);
 	}
@@ -149,8 +150,8 @@ public class GenerateGetterSetterMappingCodeAction extends AnAction {
 	 * @param project 현재 프로젝트
 	 * @return 생성된 Java 코드 문자열
 	 */
-	public static String generateGetterSetterMappingMethodCode(PsiClass sourceClass, PsiClass targetClass,
-		List<String> includedTargetFieldNames, Project project, Boolean generateMethodComment) {
+	public static MethodResult generateGetterSetterMappingMethodCode(PsiClass sourceClass, PsiClass targetClass,
+		List<String> includedTargetFieldNames, Project project, Boolean generateMethodComment, Boolean gererateAllField) {
 		StringBuilder codeBuilder = new StringBuilder();
 
 		// 1. Import 문 추가 (Builder 패턴 생성과 유사)
@@ -164,6 +165,8 @@ public class GenerateGetterSetterMappingCodeAction extends AnAction {
 		String sourceUncapitalizedName = StringUtils.uncapitalize(sourceClassName);
 		String targetClassName = targetClass.getName();
 		String targetUncapitalizedName = StringUtils.uncapitalize(targetClassName);
+		String methodName = "gen" + targetClassName + "From"  + sourceClassName;
+
 		if (generateMethodComment) {
 			codeBuilder.append("    /**\n");
 			codeBuilder.append("     * ")
@@ -179,7 +182,9 @@ public class GenerateGetterSetterMappingCodeAction extends AnAction {
 		}
 		codeBuilder.append("    public ")
 			.append(targetClassName)
-			.append(" from(")
+			.append(" ")
+			.append(methodName)
+			.append("(")
 			.append(sourceClassName)
 			.append(" ")
 			.append(sourceUncapitalizedName).append(") {\n");
@@ -208,20 +213,39 @@ public class GenerateGetterSetterMappingCodeAction extends AnAction {
 			// 대상 클래스에서 필드 찾기
 			PsiField targetField = targetClass.findFieldByName(targetFieldName, false);
 			if (targetField == null) {
-				// 필드를 찾을 수 없는 경우 - 주석 처리
-				codeBuilder
-					.append("        ")
-					.append("// ")
-					.append(targetUncapitalizedName)
-					.append(".")
-					.append("set")
-					.append(StringUtils.capitalize(targetFieldName))
-					.append("(...)")
-					.append("    // TODO: Field '")
-					.append(targetFieldName)
-					.append("' not found in ")
-					.append(sourceClassName)
-					.append(" class\n");
+				if (gererateAllField) {
+					// 필드를 찾을 수 없는 경우 - 주석 처리
+					codeBuilder
+						.append("        ")
+						.append("// ")
+						.append(targetUncapitalizedName)
+						.append(".")
+						.append("set")
+						.append(StringUtils.capitalize(targetFieldName))
+						.append("(...)");
+					PsiField targetFieldInHierarchy = targetClass.findFieldByName(targetFieldName, true);
+					if (targetFieldInHierarchy != null) {
+						// 상속받은 필드인 경우
+						codeBuilder
+							.append("        // TODO: Field '")
+							.append(targetFieldName)
+							.append("' not found in ")
+							.append(targetClassName)
+							.append(" class, but found in superclass (")
+							.append(targetFieldInHierarchy.getContainingClass().getName())
+							.append("). Mapping might be needed.\n");
+						// 필요하다면 해당 필드에 대한 Setter 호출 코드를 주석 처리하여 추가
+						// codeBuilder.append("        // target.").append("set").append(StringUtils.capitalize(targetFieldName)).append("(...); // Consider mapping this inherited field\n");
+					} else {
+						// 상속 포함하여도 필드를 찾을 수 없는 경우
+						codeBuilder
+							.append("    // TODO: Field '")
+							.append(targetFieldName)
+							.append("' not found in ")
+							.append(targetClassName)
+							.append(" class\n");
+					}
+				}
 				continue;
 			}
 
@@ -270,7 +294,17 @@ public class GenerateGetterSetterMappingCodeAction extends AnAction {
 
 			} else {
 				// 소스에 동일 이름 필드가 없는 경우
-				// codeBuilder.append("        // target.").append("set").append(StringUtils.capitalize(targetFieldName)).append("(...); // TODO: Map field '").append(targetFieldName).append("' (no matching field in source)\n");
+				if (gererateAllField) {
+					codeBuilder
+						.append("        // target.")
+						.append("set")
+						.append(StringUtils.capitalize(targetFieldName))
+						.append("(...); // TODO: Field '")
+						.append(targetFieldName)
+						.append("' not found in ")
+						.append(sourceClassName)
+						.append(" class\n");
+				}
 			}
 		}
 
@@ -282,7 +316,7 @@ public class GenerateGetterSetterMappingCodeAction extends AnAction {
 
 		// ... (showGeneratedCodeInNewTab 메소드 - 필요없음) ...
 		// 10. 코드 형식 조정 (선택 사항)
-		return codeBuilder.toString();
+		return new MethodResult(methodName,codeBuilder.toString());
 	}
 	// ... (generateCodeAndShow 메소드 - 필요없음) ...
 }

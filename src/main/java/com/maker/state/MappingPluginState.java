@@ -22,6 +22,7 @@ public class MappingPluginState implements PersistentStateComponent<MappingPlugi
 		public List<String> includedTargetFieldNames; // Lock On에서 선택된 필드 이름 목록 (null 가능)
 		public Boolean generateListMethod;
 		public Boolean generateMethodComment;
+		public Boolean gererateAllField;
 
 		// 기본 생성자 필요
 		public State() {
@@ -29,12 +30,13 @@ public class MappingPluginState implements PersistentStateComponent<MappingPlugi
 
 		// 모든 필드를 받는 생성자 (선택 사항)
 		public State(String sourceClassQName, String targetClassQName, List<String> includedFieldNames,
-			Boolean generateListMethod, Boolean generateMethodComment) {
+			Boolean generateListMethod, Boolean generateMethodComment, Boolean gererateAllField) {
 			this.sourceClassQualifiedName = sourceClassQName;
 			this.targetClassQualifiedName = targetClassQName;
 			this.includedTargetFieldNames = includedFieldNames;
 			this.generateListMethod = generateListMethod;
 			this.generateMethodComment = generateMethodComment;
+			this.gererateAllField = gererateAllField;
 		}
 	}
 
@@ -90,6 +92,14 @@ public class MappingPluginState implements PersistentStateComponent<MappingPlugi
 
 	public void setGenerateMethodComment(Boolean generateMethodComment) {
 		myState.generateMethodComment = generateMethodComment;
+	}
+
+	public Boolean isGererateAllField() {
+		return myState.gererateAllField;
+	}
+
+	public void setGererateAllField(Boolean gererateAllField) {
+		myState.gererateAllField = gererateAllField;
 	}
 
 	// 플러그인 서비스 인스턴스를 얻기 위한 static 헬퍼 메소드

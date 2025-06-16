@@ -5,7 +5,9 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
@@ -23,6 +25,7 @@ import com.intellij.ui.components.JBLabel;
 import com.intellij.util.ui.FormBuilder;
 import com.maker.action.GenerateGetterSetterMappingCodeAction;
 import com.maker.action.GenerateMappingCodeAction;
+import com.maker.entity.MethodResult;
 import com.maker.state.MappingPluginState;
 
 /**
@@ -47,6 +50,7 @@ public class MappingToolWindowContentPanel extends JPanel {
 
 	private final JCheckBox generateListMethodCheckBox;
 	private final JCheckBox generateMethodCommentCheckBox;
+	private final JCheckBox gererateAllFieldCheckBox;
 
 	// **생성된 코드를 표시할 UI 요소**
 	private final JTextArea generatedCodeArea; // <-- 생성된 코드 표시 텍스트 영역
@@ -84,6 +88,7 @@ public class MappingToolWindowContentPanel extends JPanel {
 
 		generateListMethodCheckBox = new JCheckBox("Generate List Conversion Method");
 		generateMethodCommentCheckBox = new JCheckBox("Include Method Comment");
+		gererateAllFieldCheckBox = new JCheckBox("Generate All Field");
 
 		MappingPluginState state = MappingPluginState.getInstance(project);
 		if (state != null) {
@@ -98,10 +103,17 @@ public class MappingToolWindowContentPanel extends JPanel {
 			} else {
 				generateMethodCommentCheckBox.setSelected(true); // 기본값: 주석 포함
 			}
+
+			if (state.isGererateAllField() != null) {
+				gererateAllFieldCheckBox.setSelected(state.isGererateAllField());
+			}else {
+				gererateAllFieldCheckBox.setSelected(false);
+			}
 		} else {
 			// 상태 로드 실패 시 기본값 설정
 			generateListMethodCheckBox.setSelected(false);
 			generateMethodCommentCheckBox.setSelected(true);
+			gererateAllFieldCheckBox.setSelected(false);
 		}
 
 		// UI 레이아웃 구성 (FormBuilder 사용 예시)
@@ -114,6 +126,7 @@ public class MappingToolWindowContentPanel extends JPanel {
 			.addComponent(createButtonPanel())
 			.addComponent(generateListMethodCheckBox)
 			.addComponent(generateMethodCommentCheckBox)
+			.addComponent(gererateAllFieldCheckBox)
 			.addComponent(generatedCodeLabel)
 			.addComponent(codeScrollPane)
 			.addComponentFillVertically(new JPanel(), 0);// 남은 공간 채우는 컴포넌트 추가 (선택 사항)
@@ -203,6 +216,17 @@ public class MappingToolWindowContentPanel extends JPanel {
 			}
 		});
 
+		// **타겟 필드 전체 생성 체크박스에 ActionListener 추가**
+		gererateAllFieldCheckBox.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				MappingPluginState state = MappingPluginState.getInstance(project);
+				if (state != null) {
+					state.setGererateAllField(gererateAllFieldCheckBox.isSelected()); // <-- 새로운 상태 필드 업데이트
+				}
+			}
+		});
+
 		// JList 선택 변경 리스너
 		selectedFieldsList.addListSelectionListener(new ListSelectionListener() {
 			@Override
@@ -282,6 +306,7 @@ public class MappingToolWindowContentPanel extends JPanel {
 		boolean generateListMethod = state.isGenerateListMethod() != null ? state.isGenerateListMethod() : false;
 		boolean generateMethodComment =
 			state.isGenerateMethodComment() != null ? state.isGenerateMethodComment() : true;
+		boolean generateAllField = state.isGererateAllField() != null ? state.isGererateAllField() : false;
 		// 2. 필요한 정보가 모두 있는지 확인
 		if (sourceClassQName == null || targetClassQName == null || includedTargetFieldNames == null) {
 			NotificationGroupManager.getInstance().getNotificationGroup("Mapping Plugin Notifications")
@@ -305,25 +330,25 @@ public class MappingToolWindowContentPanel extends JPanel {
 		}
 
 		// **4. 코드 문자열 생성 (단일 객체 변환 메소드)**
-		String singleMethodCode;
+		MethodResult methodResult;
 		if (codeType == CodeType.BUILDER) {
-			singleMethodCode = GenerateMappingCodeAction.generateMappingMethodCode(sourceClass, targetClass,
-				includedTargetFieldNames, project, generateMethodComment); // Builder 패턴 생성
+			methodResult = GenerateMappingCodeAction.generateMappingMethodCode(sourceClass, targetClass,
+				includedTargetFieldNames, project, generateMethodComment, generateAllField); // Builder 패턴 생성
 		} else { // codeType == CodeType.GETTER_SETTER
-			singleMethodCode = GenerateGetterSetterMappingCodeAction.generateGetterSetterMappingMethodCode(sourceClass,
-				targetClass, includedTargetFieldNames, project, generateMethodComment); // Getter/Setter 패턴 생성
+			methodResult = GenerateGetterSetterMappingCodeAction.generateGetterSetterMappingMethodCode(sourceClass,
+				targetClass, includedTargetFieldNames, project, generateMethodComment, generateAllField); // Getter/Setter 패턴 생성
 		}
 		// **5. List 변환 메소드 코드 생성 (체크박스 선택 시)**
 		String listMethodCode = null;
 		if (generateListMethod) {
 			// List 변환 메소드 코드 생성 로직 호출
 			listMethodCode = generateListConversionMethodCode(sourceClass, targetClass, project,
-				generateMethodComment); // <-- 새로운 메소드 호출
+				generateMethodComment, methodResult.methodName()); // <-- 새로운 메소드 호출
 		}
 
 		// **6. 전체 코드 문자열 조합 (단일 + List)**
 		StringBuilder fullCodeBuilder = new StringBuilder();
-		fullCodeBuilder.append(singleMethodCode); // 단일 객체 변환 메소드 추가
+		fullCodeBuilder.append(methodResult.generatedCode()); // 단일 객체 변환 메소드 추가
 		if (listMethodCode != null) {
 			fullCodeBuilder.append("\n"); // 메소드 사이에 줄바꿈 추가
 			fullCodeBuilder.append(listMethodCode); // List 변환 메소드 추가
@@ -338,7 +363,7 @@ public class MappingToolWindowContentPanel extends JPanel {
 		setGeneratedCode(combinedCode); // <-- 형식 조정된 코드 UI에 설정
 
 		NotificationGroupManager.getInstance().getNotificationGroup("Mapping Plugin Notifications")
-			.createNotification("Mapping code generated", "Code is shown in the tool window.",
+			.createNotification("Mapping generatedCode generated", "Code is shown in the tool window.",
 				NotificationType.INFORMATION)
 			.notify(project);
 	}
@@ -360,7 +385,7 @@ public class MappingToolWindowContentPanel extends JPanel {
 
 				// 사용자에게 복사 완료 알림 (선택 사항)
 				NotificationGroupManager.getInstance().getNotificationGroup("Mapping Plugin Notifications")
-					.createNotification("Code Copied", "Generated code copied to clipboard.",
+					.createNotification("Code Copied", "Generated generatedCode copied to clipboard.",
 						NotificationType.INFORMATION)
 					.notify(project);
 
@@ -374,7 +399,7 @@ public class MappingToolWindowContentPanel extends JPanel {
 		} else {
 			// 복사할 코드가 없는 경우
 			NotificationGroupManager.getInstance().getNotificationGroup("Mapping Plugin Notifications")
-				.createNotification("Copy Failed", "No code to copy.", NotificationType.WARNING)
+				.createNotification("Copy Failed", "No generatedCode to copy.", NotificationType.WARNING)
 				.notify(project);
 		}
 	}
@@ -388,15 +413,15 @@ public class MappingToolWindowContentPanel extends JPanel {
 	 * @return 생성된 List 변환 메소드 코드 문자열
 	 */
 	private static String generateListConversionMethodCode(PsiClass sourceClass, PsiClass targetClass, Project project,
-		Boolean generateMethodComment) {
+		Boolean generateMethodComment, String singleMethodname) {
 		StringBuilder codeBuilder = new StringBuilder();
 
 		String sourceClassName = sourceClass.getName();
 		String sourceUncapitalizedName = StringUtils.uncapitalize(sourceClassName);
 		String targetClassName = targetClass.getName();
 		String targetUncapitalizedName = StringUtils.uncapitalize(targetClassName);
-
 		String sourceListName = sourceUncapitalizedName + "List";
+		String methodName = "gen" + targetClassName + "List" + "From"  + sourceClassName + "List";
 
 		// 메소드 시그니처 주석
 		if (generateMethodComment) {
@@ -414,7 +439,9 @@ public class MappingToolWindowContentPanel extends JPanel {
 		// 메소드 시그니처
 		codeBuilder.append("    public List<")
 			.append(targetClassName)
-			.append("> fromList(List<")
+			.append("> ")
+			.append(methodName)
+			.append("(List<")
 			.append(sourceClassName)
 			.append("> ")
 			.append(sourceListName)
@@ -444,8 +471,10 @@ public class MappingToolWindowContentPanel extends JPanel {
 			.append("        return ")
 			.append(sourceListName)
 			.append(".stream()\n");
-		codeBuilder.append(
-			"                .map(this::from) // Use the single object conversion method\n"); // <-- 단일 객체 변환 메소드 호출
+		codeBuilder
+			.append("                .map(this::")
+			.append(singleMethodname)
+			.append(") // Use the single object conversion method\n"); // <-- 단일 객체 변환 메소드 호출
 		codeBuilder.append("                .collect(java.util.stream.Collectors.toList()); \n");
 
 		// 메소드 종료
