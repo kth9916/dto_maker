@@ -1,6 +1,10 @@
 package com.maker.action;
 
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
@@ -103,7 +107,7 @@ public class GenerateMappingCodeAction extends AnAction {
 
 		String sourceClassQName = state.getSourceClassQualifiedName();
 		String targetClassQName = state.getTargetClassQualifiedName();
-		List<String> includedTargetFieldNames = state.getIncludedTargetFieldNames();
+		Set<String> includedTargetFieldNames = new LinkedHashSet<>(state.getIncludedTargetFieldNames());
 
 		// 2. 필요한 정보가 모두 있는지 확인
 		if (sourceClassQName == null || targetClassQName == null || includedTargetFieldNames == null) {
@@ -141,7 +145,7 @@ public class GenerateMappingCodeAction extends AnAction {
 	}
 
 	public static MethodResult generateMappingMethodCode(PsiClass sourceClass, PsiClass targetClass,
-		List<String> includedTargetFieldNames, Project project, Boolean generateMethodComment, Boolean gererateAllField) {
+		Set<String> includedTargetFieldNames, Project project, Boolean generateMethodComment, Boolean gererateAllField) {
 		StringBuilder codeBuilder = new StringBuilder();
 
 		// 1. Import 문 추가 (간단 예시, 실제로는 더 정교하게 처리 필요)
@@ -165,7 +169,7 @@ public class GenerateMappingCodeAction extends AnAction {
 		String sourceUncapitalizedName = StringUtils.uncapitalize(sourceClassName);
 		String targetClassName = targetClass.getName();
 		String targetUncapitalizedName = StringUtils.uncapitalize(targetClassName);
-		String methodName = "gen" + targetClassName + "From"  + sourceClassName;
+		String methodName = "gen" + targetClassName;
 
 		if (generateMethodComment) {
 			codeBuilder.append("    /**\n");

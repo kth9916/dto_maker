@@ -1,6 +1,8 @@
 package com.maker.action;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.swing.*;
 
@@ -92,7 +94,7 @@ public class GenerateGetterSetterMappingCodeAction extends AnAction {
 
 		String sourceClassQName = state.getSourceClassQualifiedName();
 		String targetClassQName = state.getTargetClassQualifiedName();
-		List<String> includedTargetFieldNames = state.getIncludedTargetFieldNames();
+		Set<String> includedTargetFieldNames = new HashSet<>(state.getIncludedTargetFieldNames());
 
 		// 2. 필요한 정보가 모두 있는지 확인
 		if (sourceClassQName == null || targetClassQName == null || includedTargetFieldNames == null) {
@@ -151,7 +153,7 @@ public class GenerateGetterSetterMappingCodeAction extends AnAction {
 	 * @return 생성된 Java 코드 문자열
 	 */
 	public static MethodResult generateGetterSetterMappingMethodCode(PsiClass sourceClass, PsiClass targetClass,
-		List<String> includedTargetFieldNames, Project project, Boolean generateMethodComment, Boolean gererateAllField) {
+		Set<String> includedTargetFieldNames, Project project, Boolean generateMethodComment, Boolean gererateAllField) {
 		StringBuilder codeBuilder = new StringBuilder();
 
 		// 1. Import 문 추가 (Builder 패턴 생성과 유사)
@@ -165,7 +167,7 @@ public class GenerateGetterSetterMappingCodeAction extends AnAction {
 		String sourceUncapitalizedName = StringUtils.uncapitalize(sourceClassName);
 		String targetClassName = targetClass.getName();
 		String targetUncapitalizedName = StringUtils.uncapitalize(targetClassName);
-		String methodName = "gen" + targetClassName + "From"  + sourceClassName;
+		String methodName = "gen" + targetClassName;
 
 		if (generateMethodComment) {
 			codeBuilder.append("    /**\n");

@@ -6,8 +6,11 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
@@ -123,7 +126,9 @@ public class MappingToolWindowContentPanel extends JPanel {
 			.addLabeledComponent("Source:", sourceClassLabel)
 			.addLabeledComponent("Target:", targetClassLabel)
 			.addLabeledComponent(selectedFieldsLabel, listScrollPane) // 필드 목록 스크롤 패널 추가
-			.addComponent(createButtonPanel())
+			.addComponent(createEditButtonPanel())
+			.addComponent(createGenerateButtonPanel())
+			.addComponent(createCopyButtonPanel())
 			.addComponent(generateListMethodCheckBox)
 			.addComponent(generateMethodCommentCheckBox)
 			.addComponent(gererateAllFieldCheckBox)
@@ -244,14 +249,25 @@ public class MappingToolWindowContentPanel extends JPanel {
 	 * Remove Selected Field 버튼과 Generate Mapping Code 버튼을 담을 패널을 생성합니다.
 	 * @return 버튼 패널
 	 */
-	private JPanel createButtonPanel() {
+	private JPanel createGenerateButtonPanel() {
 		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT)); // 버튼을 왼쪽에 정렬
-		buttonPanel.add(removeFieldButton);
 		buttonPanel.add(generateBuilderButton);
 		buttonPanel.add(generateGetterSetterButton);
+		return buttonPanel;
+	}
+
+	private JPanel createEditButtonPanel() {
+		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT)); // 버튼을 왼쪽에 정렬
+		buttonPanel.add(removeFieldButton);
+		return buttonPanel;
+	}
+
+	private JPanel createCopyButtonPanel() {
+		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT)); // 버튼을 왼쪽에 정렬
 		buttonPanel.add(copyButton);
 		return buttonPanel;
 	}
+
 
 	public void updateSourceClassLabel(String className) {
 		sourceClassLabel.setText("Source Class: " + className);
@@ -302,7 +318,7 @@ public class MappingToolWindowContentPanel extends JPanel {
 
 		String sourceClassQName = state.getSourceClassQualifiedName();
 		String targetClassQName = state.getTargetClassQualifiedName();
-		List<String> includedTargetFieldNames = state.getIncludedTargetFieldNames();
+		Set<String> includedTargetFieldNames = new LinkedHashSet<>(state.getIncludedTargetFieldNames());
 		boolean generateListMethod = state.isGenerateListMethod() != null ? state.isGenerateListMethod() : false;
 		boolean generateMethodComment =
 			state.isGenerateMethodComment() != null ? state.isGenerateMethodComment() : true;
@@ -421,7 +437,7 @@ public class MappingToolWindowContentPanel extends JPanel {
 		String targetClassName = targetClass.getName();
 		String targetUncapitalizedName = StringUtils.uncapitalize(targetClassName);
 		String sourceListName = sourceUncapitalizedName + "List";
-		String methodName = "gen" + targetClassName + "List" + "From"  + sourceClassName + "List";
+		String methodName = "gen" + targetClassName + "List";
 
 		// 메소드 시그니처 주석
 		if (generateMethodComment) {
