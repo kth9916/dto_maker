@@ -17,9 +17,12 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowManager;
 import com.intellij.psi.PsiClass;
+import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiFile;
+import com.intellij.psi.PsiJavaCodeReferenceElement;
 import com.intellij.psi.PsiJavaFile;
+import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.ui.content.Content;
 import com.maker.state.MappingPluginState;
 import com.maker.ui.MappingToolWindowContentPanel;
@@ -47,18 +50,26 @@ public class LockOnTargetClassAction extends AnAction {
 	@Override
 	public void update(@NotNull AnActionEvent e) {
 		Project project = e.getData(CommonDataKeys.PROJECT);
-		boolean isJavaClass = false;
-		if (project != null) {
-			// PsiFile을 통해 Java 파일인지 확인하고 클래스 존재 여부 확인
-			PsiFile psiFile = e.getData(CommonDataKeys.PSI_FILE);
-			if (psiFile instanceof PsiJavaFile) {
-				PsiJavaFile javaFile = (PsiJavaFile)psiFile;
-				if (javaFile.getClasses().length > 0) {
-					isJavaClass = true;
+		PsiElement psiElement = e.getData(CommonDataKeys.PSI_ELEMENT);
+
+		boolean isActionEnabled = false;
+		if (project != null && psiElement != null) {
+			if (psiElement instanceof PsiClass) {
+				// psiElement 자체가 PsiClass인 경우 (클래스 정의 클릭)
+				isActionEnabled = true;
+			} else {
+				// psiElement가 PsiClass가 아닌 경우 (클래스 참조 등)
+				PsiElement targetElement = PsiTreeUtil.getParentOfType(psiElement, PsiJavaCodeReferenceElement.class); // PsiClass.class는 여기서 제외
+				if (targetElement instanceof PsiJavaCodeReferenceElement) {
+					PsiJavaCodeReferenceElement referenceElement = (PsiJavaCodeReferenceElement)targetElement;
+					PsiElement resolvedElement = referenceElement.resolve();
+					if (resolvedElement instanceof PsiClass) {
+						isActionEnabled = true;
+					}
 				}
 			}
 		}
-		e.getPresentation().setEnabledAndVisible(isJavaClass);
+		e.getPresentation().setEnabledAndVisible(isActionEnabled);
 	}
 
 	/**
@@ -68,19 +79,30 @@ public class LockOnTargetClassAction extends AnAction {
 	@Override
 	public void actionPerformed(@NotNull AnActionEvent e) {
 		Project project = e.getData(CommonDataKeys.PROJECT);
-		if (project == null) {
+		PsiElement psiElement = e.getData(CommonDataKeys.PSI_ELEMENT); // 클릭된 요소
+
+		if (project == null || psiElement == null) {
+			// update 메소드에서 걸러지지만, 안전을 위해 다시 체크
+			notify(project, "Lock On Target Failed", "Project or selected element is null.",
+				NotificationType.WARNING);
 			return;
 		}
 
 		// PsiFile을 통해 PsiClass 가져오기 (Load 액션과 동일)
 		PsiClass targetClass = null;
-		PsiFile psiFile = e.getData(CommonDataKeys.PSI_FILE);
-		if (psiFile instanceof PsiJavaFile) {
-			PsiJavaFile javaFile = (PsiJavaFile)psiFile;
-			PsiClass[] classesInFile = javaFile.getClasses();
-			if (classesInFile.length > 0) {
-				// 파일 내 첫 번째 클래스를 대상 클래스로 사용
-				targetClass = classesInFile[0];
+
+		if (psiElement instanceof PsiClass) {
+			// psiElement 자체가 PsiClass인 경우
+			targetClass = (PsiClass)psiElement;
+		} else {
+			// psiElement가 PsiClass가 아닌 경우
+			PsiElement targetElement = PsiTreeUtil.getParentOfType(psiElement, PsiJavaCodeReferenceElement.class); // PsiClass.class는 여기서 제외
+			if (targetElement instanceof PsiJavaCodeReferenceElement) {
+				PsiJavaCodeReferenceElement referenceElement = (PsiJavaCodeReferenceElement)targetElement;
+				PsiElement resolvedElement = referenceElement.resolve();
+				if (resolvedElement instanceof PsiClass) {
+					targetClass = (PsiClass)resolvedElement;
+				}
 			}
 		}
 
@@ -165,5 +187,13 @@ public class LockOnTargetClassAction extends AnAction {
 
 		// 임시 구현: 모든 필드를 선택된 것으로 간주
 		return fieldNames;
+	}
+
+	private void notify(Project project, String title, String content, NotificationType type) {
+		//
+		NotificationGroupManager.getInstance().getNotificationGroup("Mapping Plugin Notifications")
+			.createNotification(title, content,
+				type)
+			.notify(project);
 	}
 }

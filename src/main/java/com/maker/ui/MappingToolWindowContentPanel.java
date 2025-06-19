@@ -81,7 +81,7 @@ public class MappingToolWindowContentPanel extends JPanel {
 
 		// **생성된 코드 표시 영역 초기화**
 		generatedCodeLabel = new JBLabel("Generated Code:");
-		generatedCodeArea = new JTextArea(50, 40); // 10줄, 40열 텍스트 영역 (크기 조정 필요)
+		generatedCodeArea = new JTextArea(200, 40); // 10줄, 40열 텍스트 영역 (크기 조정 필요)
 		generatedCodeArea.setEditable(false); // 편집 불가능
 		generatedCodeArea.setLineWrap(true); // 자동 줄바꿈
 		generatedCodeArea.setWrapStyleWord(true); // 단어 단위 줄바꿈
