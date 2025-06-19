@@ -216,7 +216,7 @@ public class GenerateMappingCodeAction extends AnAction {
 					codeBuilder
 						.append("                // .")
 						.append(targetFieldName)
-						.append("(...)")
+						.append("()")
 					;
 					PsiField targetFieldInHierarchy = targetClass.findFieldByName(targetFieldName, true);
 					if (targetFieldInHierarchy != null) {
@@ -289,7 +289,7 @@ public class GenerateMappingCodeAction extends AnAction {
 					codeBuilder
 						.append("                // .")
 						.append(targetFieldName)
-						.append("(...) // TODO: Field '")
+						.append("() // TODO: Field '")
 						.append(targetFieldName)
 						.append("' not found in ")
 						.append(sourceClassName)

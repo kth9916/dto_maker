@@ -224,7 +224,7 @@ public class GenerateGetterSetterMappingCodeAction extends AnAction {
 						.append(".")
 						.append("set")
 						.append(StringUtils.capitalize(targetFieldName))
-						.append("(...)");
+						.append("()");
 					PsiField targetFieldInHierarchy = targetClass.findFieldByName(targetFieldName, true);
 					if (targetFieldInHierarchy != null) {
 						// 상속받은 필드인 경우
@@ -301,7 +301,7 @@ public class GenerateGetterSetterMappingCodeAction extends AnAction {
 						.append("        // target.")
 						.append("set")
 						.append(StringUtils.capitalize(targetFieldName))
-						.append("(...); // TODO: Field '")
+						.append("(); // TODO: Field '")
 						.append(targetFieldName)
 						.append("' not found in ")
 						.append(sourceClassName)
